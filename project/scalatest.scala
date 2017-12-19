@@ -311,10 +311,7 @@ object ScalatestBuild extends Build {
         Def.task{
           ScalacticGenResourcesJVM.genResources((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
         }.taskValue
-      },
-      // Disable publishing macros directly, included in scalactic main jar
-      publish := {},
-      publishLocal := {}
+      }
     )
 
   lazy val deleteJsDependenciesTask = taskKey[Unit]("Delete JS_DEPENDENCIES")
