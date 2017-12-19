@@ -326,11 +326,7 @@ object ScalatestBuild extends Build {
           GenColCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenNumberCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
         }.taskValue
-      },
-      // Disable publishing macros directly, included in scalactic main jar
-      publishArtifact := false,
-      publish := {},
-      publishLocal := {}
+      }
     )
 
   lazy val deleteJsDependenciesTask = taskKey[Unit]("Delete JS_DEPENDENCIES")
