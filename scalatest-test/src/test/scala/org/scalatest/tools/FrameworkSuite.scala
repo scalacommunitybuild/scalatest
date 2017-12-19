@@ -1669,6 +1669,7 @@ class FrameworkSuite extends FunSuite {
     }
   }
 
+  /*
   test("Framework.runner should use passed in -o config in sub-process") {
     val mainRunner = framework.runner(Array("-oDF"), Array.empty, testClassLoader)
     makeSureDone(mainRunner) {
@@ -1691,6 +1692,7 @@ class FrameworkSuite extends FunSuite {
       }
     }
   }
+  */
 
   test("Framework.runner should use the first -o when multiple -o is passed in") {
     val runner = framework.runner(Array("-oW", "-oDF"), Array.empty, testClassLoader)
