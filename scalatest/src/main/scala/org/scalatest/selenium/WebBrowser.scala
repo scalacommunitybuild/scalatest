@@ -1752,40 +1752,8 @@ trait WebBrowser {
    * @param underlying the <code>WebElement</code> representing a text field
    * @throws TestFailedExeption if the passed <code>WebElement</code> does not represent a text field
    */
-  final class TextField(val underlying: WebElement)(implicit pos: source.Position) extends Element {
-    
-    if(!isTextField(TagMeta(underlying)))
-      throw new TestFailedException(
-                     (_: StackDepthException) => Some("Element " + underlying + " is not text field."),
-                     None,
-                     pos
-                   )
-    
-    /**
-     * Gets this text field's value.
-     *
-     * <p>
-     * This method invokes <code>getAttribute("value")</code> on the underlying <code>WebElement</code>.
-     * </p>
-     *
-     * @return the text field's value
-     */
-    def value: String = underlying.getAttribute("value")  
-    
-    /**
-     * Sets this text field's value.
-     *
-     * @param value the new value
-     */
-    def value_=(value: String): Unit = {
-      underlying.clear()
-      underlying.sendKeys(value)
-    }
-
-    /**
-     * Clears this text field.
-     */
-    def clear(): Unit = { underlying.clear() }
+  final class TextField(val underlying: WebElement)(implicit pos: source.Position) extends ValueElement {
+    checkCorrectType(isTextField, "text")(pos)
   }
 
   /**
@@ -1803,39 +1771,8 @@ trait WebBrowser {
    * @param underlying the <code>WebElement</code> representing a text area
    * @throws TestFailedExeption if the passed <code>WebElement</code> does not represent a text area
    */
-  final class TextArea(val underlying: WebElement)(implicit pos: source.Position) extends Element {
-    if(!isTextArea(TagMeta(underlying)))
-      throw new TestFailedException(
-                     (_: StackDepthException) => Some("Element " + underlying + " is not text area."),
-                     None,
-                     pos
-                   )
-    
-    /**
-     * Gets this text area's value.
-     *
-     * <p>
-     * This method invokes <code>getAttribute("value")</code> on the underlying <code>WebElement</code>.
-     * </p>
-     *
-     * @return the text area's value
-     */
-    def value: String = underlying.getAttribute("value")
-
-    /**
-     * Sets this text area's value.
-     *
-     * @param value the new value
-     */
-    def value_=(value: String): Unit = {
-      underlying.clear()
-      underlying.sendKeys(value)
-    }
-
-    /**
-     * Clears this text area.
-     */
-    def clear(): Unit = { underlying.clear() }
+  final class TextArea(val underlying: WebElement)(implicit pos: source.Position) extends ValueElement {
+    checkCorrectType(isTextArea, "textarea")(pos)
   }
   
   /**
@@ -1853,45 +1790,14 @@ trait WebBrowser {
    * @param underlying the <code>WebElement</code> representing a password field
    * @throws TestFailedExeption if the passed <code>WebElement</code> does not represent a password field
    */
-  final class PasswordField(val underlying: WebElement)(implicit pos: source.Position) extends Element {
-    
-    if(!isPasswordField(TagMeta(underlying)))
-      throw new TestFailedException(
-                     (_: StackDepthException) => Some("Element " + underlying + " is not password field."),
-                     None,
-                     pos
-                   )
-    
-    /**
-     * Gets this password field's value.
-     *
-     * <p>
-     * This method invokes <code>getAttribute("value")</code> on the underlying <code>WebElement</code>.
-     * </p>
-     *
-     * @return the password field's value
-     */
-    def value: String = underlying.getAttribute("value")  
-    
-    /**
-     * Sets this password field's value.
-     *
-     * @param value the new value
-     */
-    def value_=(value: String): Unit = {
-      underlying.clear()
-      underlying.sendKeys(value)
-    }
-
-    /**
-     * Clears this text field.
-     */
-    def clear(): Unit = { underlying.clear() }
+  final class PasswordField(val underlying: WebElement)(implicit pos: source.Position) extends ValueElement {
+    checkCorrectType(isPasswordField, "password")(pos)
   }
   
   trait ValueElement extends Element {
     val underlying: WebElement
 
+    @deprecated("This method is internal which is not intended to be called by user, we plan to remove it in the future version of ScalaTest, if you did use it, please kindly let us know by contacting us.")
     def checkCorrectType(isA: (TagMeta) => Boolean, typeDescription: String)(implicit pos: source.Position): Unit = {
       if(!isA(TagMeta(underlying)))
         throw new TestFailedException(
@@ -2227,7 +2133,7 @@ trait WebBrowser {
 
     private def groupElements = driver.findElements(By.name(groupName)).asScala.toList.filter(e => isRadioButton(TagMeta(e)))
 
-    if (groupElements.length == 0)
+    if (groupElements.isEmpty)
       throw new TestFailedException(
                      (_: StackDepthException) => Some("No radio buttons with group name '" + groupName + "' was found."),
                      None,
