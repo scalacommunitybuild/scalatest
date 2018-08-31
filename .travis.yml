@@ -2,7 +2,7 @@ language: scala
 scala:
   - 2.10.7
   - 2.11.12
-  - 2.12.4
+  - 2.12.6
   - 2.13.0-M2
 addons:
   apt:
@@ -14,7 +14,7 @@ jdk:
   - oraclejdk8
 
 dist: trusty
-sudo: false
+sudo: true
 
 env:
   #see https://github.com/scalatest/scalatest/pull/245
@@ -47,6 +47,7 @@ env:
     - MODE=genSortedTests
     - MODE=genLoneElementTests
     - MODE=genEmptyTests
+    - MODE=genColCompatTests
     - MODE=examples
     - MODE=examplesJS
 
@@ -54,7 +55,7 @@ matrix:
   exclude:
     - scala: "2.13.0-M2"
       jdk: openjdk6
-    - scala: "2.12.4"
+    - scala: "2.12.6"
       jdk: openjdk6
     - scala: "2.11.12"
       jdk: oraclejdk8
@@ -65,8 +66,11 @@ branches:
   only:
     - 3.0.x
 
-#before_script: ./travis_build.sh Compile
-script: ./travis_build.sh $MODE
+script:
+  # work around https://github.com/travis-ci/travis-ci/issues/9713
+  - if [[ $JAVA_HOME = *java-6* ]]; then jdk_switcher use openjdk6; fi
+  - java -version
+  - ./travis_build.sh $MODE
 
 notifications:
   email:
