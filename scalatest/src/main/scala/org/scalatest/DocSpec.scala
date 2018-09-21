@@ -41,7 +41,7 @@ private[scalatest] abstract class DocSpec extends DocSpecLike {
 private[scalatest] object DocSpec {
 
   def trimMarkup(text: String): String = {
-    // work around scala/bug#11152 on JDK 11
+    // work around scala/bug#11125 on JDK 11
     val lines = Predef.augmentString(text).lines.toList
     val zipLines = lines.zipWithIndex
     val firstNonWhiteLine = zipLines.find { case (line, _) => !line.trim.isEmpty }
@@ -53,7 +53,7 @@ private[scalatest] object DocSpec {
   }
 
   def stripMargin(text: String): String = {
-    // work around scala/bug#11152 on JDK 11
+    // work around scala/bug#11125 on JDK 11
     val lines = Predef.augmentString(text).lines.toList
     val firstNonWhiteLine = lines.find(!_.trim.isEmpty)
     firstNonWhiteLine match {

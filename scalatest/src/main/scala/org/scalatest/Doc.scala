@@ -144,7 +144,7 @@ println("&&&&&&&&&&&")
 
   private[scalatest] def getSnippets(text: String): Vector[Snippet] = {
 //println("text: " + text)
-    // work around scala/bug#11152 on JDK 11
+    // work around scala/bug#11125 on JDK 11
     val lines = Vector.empty ++ Predef.augmentString(text).lines.toIterable
 //println("lines: " + lines)
     val pairs = lines map { line =>
@@ -187,7 +187,7 @@ println("&&&&&&&&&&&")
 private[scalatest] object Doc {
 
   private[scalatest] def trimMarkup(text: String): String = {
-    // work around scala/bug#11152 on JDK 11
+    // work around scala/bug#11125 on JDK 11
     val lines = Predef.augmentString(text).lines.toList
     val zipLines = lines.zipWithIndex
     val firstNonWhiteLine = zipLines.find { case (line, _) => !line.trim.isEmpty }
@@ -199,7 +199,7 @@ private[scalatest] object Doc {
   }
 
   private[scalatest] def stripMargin(text: String): String = {
-    // work around scala/bug#11152 on JDK 11
+    // work around scala/bug#11125 on JDK 11
     val lines = Predef.augmentString(text).lines.toList
     val firstNonWhiteLine = lines.find(!_.trim.isEmpty)
     firstNonWhiteLine match {
