@@ -130,7 +130,7 @@ object GenConfigMap {
           |
           |  override def +[A >: Any](kv: (String, A)): ConfigMap = new ConfigMap(underlying + kv)
           |
-          |  def remove(key: String): ConfigMap = new ConfigMap(underlying - key)
+          |  def removed(key: String): ConfigMap = new ConfigMap(underlying - key)
           |
           |  override def empty: ConfigMap = new ConfigMap(Map.empty[String, Any])
           |
