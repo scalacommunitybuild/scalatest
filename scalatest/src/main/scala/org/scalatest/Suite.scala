@@ -15,10 +15,10 @@
  */
 package org.scalatest
 
-import org.scalactic._
+import org.scalactic.{Resources => _, _}
 import org.scalatest.events._
 import Requirements._
-import exceptions._
+import org.scalatest.exceptions._
 import java.lang.annotation.AnnotationFormatError
 import java.lang.reflect.{Method, Modifier}
 import java.nio.charset.CoderMalfunctionError
@@ -28,18 +28,18 @@ import org.scalactic.Prettifier
 import org.scalatest.time.{Seconds, Span}
 import scala.collection.immutable.TreeSet
 import scala.util.control.NonFatal
-import StackDepthExceptionHelper.getStackDepthFun
+import org.scalatest.exceptions.StackDepthExceptionHelper._
 import Suite.checkChosenStyles
 import Suite.formatterForSuiteAborted
 import Suite.formatterForSuiteCompleted
 import Suite.formatterForSuiteStarting
 import Suite.getEscapedIndentedTextForTest
-import Suite.getSimpleNameOfAnObjectsClass
+import NameUtil.getSimpleNameOfAnObjectsClass
 import Suite.getTopOfMethod
 import Suite.isTestMethodGoodies
 import Suite.reportTestIgnored
 import Suite.takesInformer
-import Suite.wrapReporterIfNecessary
+import org.scalatest.tools.Utils.wrapReporterIfNecessary
 import annotation.tailrec
 import collection.GenTraversable
 import collection.mutable.ListBuffer
@@ -889,30 +889,6 @@ trait Suite extends Assertions with Serializable { thisSuite =>
    */
   def testNames: Set[String] = Set.empty
 
-  // SKIP-SCALATESTJS-START
-  // Leave this around for a while so can print out a warning if we find testXXX methods.
-  private[scalatest] def yeOldeTestNames: Set[String] = {
-
-    def isTestMethod(m: Method) = {
-
-      // Factored out to share code with fixture.Suite.testNames
-      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags, isTestDataFor) = isTestMethodGoodies(m)
-
-      isInstanceMethod && (firstFour == "test") && !isTestDataFor && ((hasNoParams && !isTestNames && !isTestTags) || takesInformer(m))
-    }
-
-    val testNameArray =
-      for (m <- getClass.getMethods; if isTestMethod(m)) 
-        yield if (takesInformer(m)) m.getName + InformerInParens else m.getName
-
-    val result = TreeSet.empty[String](EncodedOrdering) ++ testNameArray
-    if (result.size != testNameArray.length) {
-      throw new NotAllowedException("Howdy", 0)
-    }
-    result
-  }
-  // SKIP-SCALATESTJS-END
-
   /*
   Old style method names will have (Informer) at the end still, but new ones will
   not. This method will find the one without a Rep if the same name is used
@@ -1029,6 +1005,7 @@ trait Suite extends Assertions with Serializable { thisSuite =>
     requireNonNull(testName, args)
 
     // SKIP-SCALATESTJS-START
+    val yeOldeTestNames = Suite.yeOldeTestNames(this)
     if (!this.isInstanceOf[refspec.RefSpec] && yeOldeTestNames.nonEmpty) {
       if (yeOldeTestNames.size > 1) println(s"""WARNING: methods with names starting with "test" exist on "${this.suiteName}" (fully qualified name: "${this.getClass.getName}"). The deprecation period for using Suite a style trait has expired, so methods starting with "test" will no longer be executed as tests. If you want to run those methods as tests, please use trait Spec instead. The methods whose names start with "test" are: ${yeOldeTestNames.map(NameTransformer.decode(_)).mkString("\"", "\", \"", "\"")}.""")
       else println(s"""WARNING: a method whose name starts with "test" exists on "${this.suiteName}" (fully qualified name: "${this.getClass.getName}"). The deprecation period for using Suite a style trait has expired, so methods starting with "test" will no longer be executed as tests. If you want to run that method as a test, please use trait Spec instead. The method whose name starts with "test" is: ${yeOldeTestNames.map(NameTransformer.decode(_)).mkString("\"", "\", \"", "\"")}.""")
@@ -1396,22 +1373,7 @@ private[scalatest] object Suite {
   private[scalatest] val SELECTED_TAG = "org.scalatest.Selected"
   private[scalatest] val CHOSEN_STYLES = "org.scalatest.ChosenStyles"
 
-  @volatile private[scalatest] var testSortingReporterTimeout = Span(2, Seconds)
-
-  def getSimpleNameOfAnObjectsClass(o: AnyRef) = stripDollars(parseSimpleName(o.getClass.getName))
-
-  // [bv: this is a good example of the expression type refactor. I moved this from SuiteClassNameListCellRenderer]
-  // this will be needed by the GUI classes, etc.
-  def parseSimpleName(fullyQualifiedName: String) = {
-
-    val dotPos = fullyQualifiedName.lastIndexOf('.')
-
-    // [bv: need to check the dotPos != fullyQualifiedName.length]
-    if (dotPos != -1 && dotPos != fullyQualifiedName.length)
-      fullyQualifiedName.substring(dotPos + 1)
-    else
-      fullyQualifiedName
-  }
+  private[scalatest] val defaultTestSortingReporterTimeoutInSeconds = 2.0
 
   // SKIP-SCALATESTJS-START
   def checkForPublicNoArgConstructor(clazz: java.lang.Class[_]) = {
@@ -1426,29 +1388,6 @@ private[scalatest] object Suite {
     }
   }
   // SKIP-SCALATESTJS-END
-
-  // This attempts to strip dollar signs that happen when using the interpreter. It is quite fragile
-  // and already broke once. In the early days, all funky dollar sign encrusted names coming out of
-  // the interpreter started with "line". Now they don't, but in both cases they seemed to have at
-  // least one "$iw$" in them. So now I leave the string alone unless I see a "$iw$" in it. Worst case
-  // is sometimes people will get ugly strings coming out of the interpreter. -bv April 3, 2012
-  def stripDollars(s: String): String = {
-    val lastDollarIndex = s.lastIndexOf('$')
-    if (lastDollarIndex < s.length - 1)
-      if (lastDollarIndex == -1 || !s.contains("$iw$")) s else s.substring(lastDollarIndex + 1)
-    else {
-      // The last char is a dollar sign
-      val lastNonDollarChar = s.reverse.find(_ != '$')
-      lastNonDollarChar match {
-        case None => s
-        case Some(c) => {
-          val lastNonDollarIndex = s.lastIndexOf(c)
-          if (lastNonDollarIndex == -1) s
-          else stripDollars(s.substring(0, lastNonDollarIndex + 1))
-        }
-      }
-    }
-  }
 
   def diffStrings(s: String, t: String): Tuple2[String, String] = Prettifier.diffStrings(s, t)
   
@@ -2026,7 +1965,7 @@ used for test events like succeeded/failed, etc.
     if(stackDepth >= 0 && stackDepth < stackTraceList.length) {
       val stackTrace = stackTraceList(stackDepth)
       if(stackTrace.getLineNumber >= 0 && stackTrace.getFileName != null)
-        Some(LineInFile(stackTrace.getLineNumber, StackDepthExceptionHelper.getFailedCodeFileName(stackTrace).getOrElse(""), None))
+        Some(LineInFile(stackTrace.getLineNumber, getFailedCodeFileName(stackTrace).getOrElse(""), None))
       else
         None
     }
@@ -2134,14 +2073,6 @@ used for test events like succeeded/failed, etc.
     (stopper, report, testStartTime)
   }
 
-  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
-  // so that exceptions are caught and transformed
-  // into error messages on the standard error stream.
-  def wrapReporterIfNecessary(theSuite: Suite, reporter: Reporter): Reporter = reporter match {
-    case cr: CatchReporter => cr
-    case _ => theSuite.createCatchReporter(reporter)
-  }
-
   def testMethodTakesAFixtureAndInformer(testName: String) = testName.endsWith(FixtureAndInformerInParens)
   def testMethodTakesAFixture(testName: String) = testName.endsWith(FixtureInParens)
 
@@ -2208,6 +2139,30 @@ used for test events like succeeded/failed, etc.
     (Map[A, B]() /: (for (m <- ms; kv <- m) yield kv)) { (a, kv) =>
       a + (if (a.contains(kv._1)) kv._1 -> f(a(kv._1), kv._2) else kv)
     }
+
+  // SKIP-SCALATESTJS-START
+  // Leave this around for a while so can print out a warning if we find testXXX methods.
+  def yeOldeTestNames(theSuite: Suite): Set[String] = {
+
+    def isTestMethod(m: Method) = {
+
+      // Factored out to share code with fixture.Suite.testNames
+      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags, isTestDataFor) = isTestMethodGoodies(m)
+
+      isInstanceMethod && (firstFour == "test") && !isTestDataFor && ((hasNoParams && !isTestNames && !isTestTags) || takesInformer(m))
+    }
+
+    val testNameArray =
+      for (m <- theSuite.getClass.getMethods; if isTestMethod(m))
+        yield if (takesInformer(m)) m.getName + InformerInParens else m.getName
+
+    val result = TreeSet.empty[String](EncodedOrdering) ++ testNameArray
+    if (result.size != testNameArray.length) {
+      throw new NotAllowedException("Howdy", 0)
+    }
+    result
+  }
+  // SKIP-SCALATESTJS-END
 }
 
 

@@ -23,9 +23,9 @@ object ScalatestBuild extends Build {
 
   // To temporarily switch sbt to a different Scala version:
   // > ++ 2.10.5
-  val buildScalaVersion = "2.12.6"
+  val buildScalaVersion = "2.12.7"
 
-  val releaseVersion = "3.0.6-SNAP2"
+  val releaseVersion = "3.0.6-SNAP-for-scalafix"
 
   val previousReleaseVersion = "3.0.5"
 
@@ -105,7 +105,7 @@ object ScalatestBuild extends Build {
     scalaVersion := buildScalaVersion,
     crossScalaVersions := Seq(buildScalaVersion, "2.10.6", "2.12.0"),
     version := releaseVersion,
-    scalacOptions ++= Seq("-feature", "-target:jvm-1.6") ++ (if (scalaVersion.value == "2.13.0-M4") Seq("-Xsource:2.12") else Seq.empty),
+    scalacOptions ++= Seq("-feature", "-target:jvm-1.6"),
     resolvers += "Sonatype Public" at "https://oss.sonatype.org/content/groups/public",
     libraryDependencies ++= scalaLibraries(scalaVersion.value),
     publishTo <<= version { v: String =>
@@ -245,6 +245,7 @@ object ScalatestBuild extends Build {
       "-m", "org.scalatest.time",
       "-m", "org.scalatest.words",
       "-m", "org.scalatest.enablers",
+      "-m", "org.scalatestplus.scalacheck",
       "-oDI",
       "-W", "120", "60",
       "-h", "target/html",
@@ -275,6 +276,7 @@ object ScalatestBuild extends Build {
       "-m", "org.scalatest.time",
       "-m", "org.scalatest.words",
       "-m", "org.scalatest.enablers",
+      "-m", "org.scalatestplus.scalacheck",
       "-oDIF"))
 
   lazy val commonTest = Project("common-test", file("common-test"))
@@ -317,7 +319,9 @@ object ScalatestBuild extends Build {
       organization := "org.scalactic",
       sourceGenerators in Compile += {
         Def.task{
-          ScalacticGenResourcesJVM.genResources((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
+          ScalacticGenResourcesJVM.genResources((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
+          GenColCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
+          GenNumberCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
         }.taskValue
       }
     )
@@ -333,7 +337,9 @@ object ScalatestBuild extends Build {
         // We'll delete JS_DEPENDENCIES in scalactic-macro.js
         Def.task{
           GenScalacticJS.genMacroScala((sourceManaged in Compile).value, version.value, scalaVersion.value) ++
-          ScalacticGenResourcesJSVM.genResources((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
+          ScalacticGenResourcesJSVM.genResources((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
+          GenColCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
+          GenNumberCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
         }.taskValue
       },
       // Disable publishing macros directly, included in scalactic main jar
@@ -518,7 +524,6 @@ object ScalatestBuild extends Build {
          //GenSafeStyles.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
          ScalaTestGenResourcesJVM.genResources((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
          ScalaTestGenResourcesJVM.genFailureMessages((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
-         GenColCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
          GenConfigMap.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value)
        }.taskValue
      },
@@ -556,7 +561,14 @@ object ScalatestBuild extends Build {
         "org.scalatest.time",
         "org.scalatest.tools",
         "org.scalatest.verb",
-        "org.scalatest.words"
+        "org.scalatest.words",
+        "org.scalatestplus.scalacheck",
+        "org.scalatestplus.easymock",
+        "org.scalatestplus.jmock",
+        "org.scalatestplus.mockito",
+        "org.scalatestplus.selenium",
+        "org.scalatestplus.junit",
+        "org.scalatestplus.testng"
       ),
       OsgiKeys.importPackage := Seq(
         "org.scalatest.*",
@@ -616,7 +628,6 @@ object ScalatestBuild extends Build {
           GenVersions.genScalaTestVersions((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
           ScalaTestGenResourcesJSVM.genFailureMessages((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
           ScalaTestGenResourcesJSVM.genResources((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
-          GenColCompatHelper.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
           GenConfigMap.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value)
         }.taskValue
       },
@@ -662,7 +673,8 @@ object ScalatestBuild extends Build {
         "org.scalatest.time",
         "org.scalatest.tools",
         "org.scalatest.verb",
-        "org.scalatest.words"
+        "org.scalatest.words",
+        "org.scalatestplus.scalacheck"
       ),
       OsgiKeys.importPackage := Seq(
         "org.scalatest.*",
@@ -766,10 +778,17 @@ object ScalatestBuild extends Build {
         "org.scalatest.tools",
         "org.scalatest.verb",
         "org.scalatest.words",
+        "org.scalatestplus.scalacheck",
         "org.scalactic",
         "org.scalactic.anyvals",
         "org.scalactic.exceptions",
-        "org.scalactic.source"
+        "org.scalactic.source",
+        "org.scalatestplus.easymock",
+        "org.scalatestplus.jmock",
+        "org.scalatestplus.mockito",
+        "org.scalatestplus.selenium",
+        "org.scalatestplus.junit",
+        "org.scalatestplus.testng"
       ),
       OsgiKeys.importPackage := Seq(
         "org.scalatest.*",
@@ -833,6 +852,7 @@ object ScalatestBuild extends Build {
         "org.scalatest.tools",
         "org.scalatest.verb",
         "org.scalatest.words",
+        "org.scalatestplus.scalacheck", 
         "org.scalactic",
         "org.scalactic.anyvals",
         "org.scalactic.exceptions",
@@ -867,7 +887,7 @@ object ScalatestBuild extends Build {
   def gentestsSharedSettings: Seq[Setting[_]] = Seq(
     javaHome := getJavaHome(scalaBinaryVersion.value),
     scalaVersion := buildScalaVersion,
-    scalacOptions ++= Seq("-feature") ++ (if (scalaVersion.value startsWith "2.13") Seq.empty else Seq("-Ypartial-unification")),
+    scalacOptions ++= Seq("-feature") ++ (if (scalaBinaryVersion.value == "2.10" || (scalaVersion.value startsWith "2.13")) Seq.empty else Seq("-Ypartial-unification")),
     resolvers += "Sonatype Public" at "https://oss.sonatype.org/content/groups/public",
     libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
     libraryDependencies += scalacheckDependency("optional"),
