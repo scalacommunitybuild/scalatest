@@ -20,22 +20,8 @@ package org.scalatest
  */
 package object prop {
 
-  @deprecated("Checkers has been moved from org.scalatest.prop to org.scalatestplus.scalacheck. Please update your imports, as this deprecated type alias will be removed in a future version of ScalaTest.")
-  type Checkers = org.scalatestplus.scalacheck.Checkers
+  
 
-  @deprecated("Checkers has been moved from org.scalatest.prop to org.scalatestplus.scalacheck. Please update your imports, as this deprecated type alias will be removed in a future version of ScalaTest.")
-  lazy val Checkers = org.scalatestplus.scalacheck.Checkers
-
-  @deprecated("GeneratorDrivenPropertyChecks has been moved from org.scalatest.prop to org.scalatestplus.scalacheck and renamed as ScalaCheckDrivenPropertyChecks. Please update your imports, as this deprecated type alias will be removed in a future version of ScalaTest.")
-  type GeneratorDrivenPropertyChecks = org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-
-  @deprecated("GeneratorDrivenPropertyChecks has been moved from org.scalatest.prop to org.scalatestplus.scalacheck and renamed as ScalaCheckDrivenPropertyChecks. Please update your imports, as this deprecated type alias will be removed in a future version of ScalaTest.")
-  lazy val GeneratorDrivenPropertyChecks = org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-
-  @deprecated("PropertyChecks has been moved from org.scalatest.prop to org.scalatestplus.scalacheck and renamed as ScalaCheckPropertyChecks. Please update your imports, as this deprecated type alias will be removed in a future version of ScalaTest.")
-  type PropertyChecks = org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
-  @deprecated("PropertyChecks has been moved from org.scalatest.prop to org.scalatestplus.scalacheck and renamed as ScalaCheckPropertyChecks. Please update your imports, as this deprecated type alias will be removed in a future version of ScalaTest.")
-  lazy val PropertyChecks = org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+  
 
 }

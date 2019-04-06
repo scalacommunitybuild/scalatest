@@ -16,15 +16,15 @@
 package org.scalatestplus.testng {
 
   import org.scalatest._
-import org.scalatest.jmock._
+import org.scalatestplus.jmock._
 import org.scalatest.events._
 import org.scalatestplus.testng.testpackage._
 import org.scalatest.fixture
-import org.scalatest.jmock.JMockCycleFixture
+import org.scalatestplus.jmock.JMockCycleFixture
 import org.hamcrest.core.IsAnything
 import org.jmock.Expectations
 import org.jmock.Mockery
-import org.scalatest.jmock.JMockCycle
+import org.scalatestplus.jmock.JMockCycle
 
   class TestNGSuiteSuite extends fixture.FunSuite with JMockCycleFixture with SuiteExpectations {
 
@@ -112,7 +112,7 @@ import org.scalatest.jmock.JMockCycle
         status.setCompleted()
       }
     }
-    
+
     test("Only the correct method should be run when specifying a single method to run") { cycle => import cycle._
       
       val reporter = mock[Reporter]
@@ -167,7 +167,7 @@ import org.scalatest.jmock.JMockCycle
     
     test("infoProvided should be available for AfterMethod/Class/Suite annotations") { () =>
       // this needs to be written after i figure out the mock integration
-    }     
+    }
   }
 
   package testpackage {

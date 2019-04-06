@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import org.scalatest._
-import org.scalatest.jmock._
+import org.scalatestplus.jmock._
 import java.io.File
 import org.apache.commons.io.FileUtils
 import org.jmock.Expectations

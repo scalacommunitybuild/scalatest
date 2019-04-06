@@ -23,7 +23,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
  *
  * <p>
  * This trait extends both <a href="TableDrivenPropertyChecks.html"><code>TableDrivenPropertyChecks</code></a> and
- * <a href="GeneratorDrivenPropertyChecks.html"><code>GeneratorDrivenPropertyChecks</code></a>. Thus by mixing in
+ * <a href="ScalaCheckDrivenPropertyChecks.html"><code>ScalaCheckDrivenPropertyChecks</code></a>. Thus by mixing in
  * this trait you can perform property checks on data supplied either by tables or generators. For the details of
  * table- and generator-driven property checks, see the documentation for each by following the links above.
  * </p>
@@ -48,7 +48,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
  * </pre>
  *
  * <p>
- * If you mix in <code>PropertyChecks</code>, you could use a generator-driven property check to test that the passed values for numerator and
+ * If you mix in <code>ScalaCheckPropertyChecks</code>, you could use a generator-driven property check to test that the passed values for numerator and
  * denominator are properly normalized, like this:
  * </p>
  *
@@ -100,8 +100,8 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 trait ScalaCheckPropertyChecks extends TableDrivenPropertyChecks with ScalaCheckDrivenPropertyChecks
 
 /**
- * Companion object that facilitates the importing of <code>PropertyChecks</code> members as 
- * an alternative to mixing it in. One use case is to import <code>PropertyChecks</code> members so you can use
+ * Companion object that facilitates the importing of <code>ScalaCheckPropertyChecks</code> members as 
+ * an alternative to mixing it in. One use case is to import <code>ScalaCheckPropertyChecks</code> members so you can use
  * them in the Scala interpreter.
  *
  * @author Bill Venners

@@ -23,9 +23,9 @@ object ScalatestBuild extends Build {
 
   // To temporarily switch sbt to a different Scala version:
   // > ++ 2.10.5
-  val buildScalaVersion = "2.12.7"
+  val buildScalaVersion = "2.12.8"
 
-  val releaseVersion = "3.0.6-SNAP6"
+  val releaseVersion = "3.0.8-RC2"
 
   val previousReleaseVersion = "3.0.5"
 
@@ -170,7 +170,7 @@ object ScalatestBuild extends Build {
 
   def scalaXmlDependency(theScalaVersion: String): Seq[ModuleID] =
     CrossVersion.partialVersion(theScalaVersion) match {
-      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq("org.scala-lang.modules" %% "scala-xml" % "1.1.0")
+      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq("org.scala-lang.modules" %% "scala-xml" % "1.2.0")
       case other => Seq.empty
     }
 
@@ -246,6 +246,9 @@ object ScalatestBuild extends Build {
       "-m", "org.scalatest.words",
       "-m", "org.scalatest.enablers",
       "-m", "org.scalatestplus.scalacheck",
+      "-m", "org.scalatestplus.easymock",
+      "-m", "org.scalatestplus.jmock",
+      "-m", "org.scalatestplus.junit",
       "-oDI",
       "-W", "120", "60",
       "-h", "target/html",
@@ -365,13 +368,13 @@ object ScalatestBuild extends Build {
       projectTitle := "Scalactic",
       organization := "org.scalactic",
       initialCommands in console := "import org.scalactic._",
-      libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
       sourceGenerators in Compile += {
         Def.task{
           GenVersions.genScalacticVersions((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           ScalacticGenResourcesJVM.genFailureMessages((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenEvery.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenChain.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
+          GenAccumulation.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenArrayHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
         }.taskValue
       },
@@ -412,13 +415,13 @@ object ScalatestBuild extends Build {
       projectTitle := "Scalactic.js",
       organization := "org.scalactic",
       moduleName := "scalactic",
-      //libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "1.1.0",
       sourceGenerators in Compile += {
         Def.task {
           GenScalacticJS.genScala((sourceManaged in Compile).value, version.value, scalaVersion.value) ++
           ScalacticGenResourcesJSVM.genFailureMessages((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenEvery.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenChain.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
+          GenAccumulation.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
           GenArrayHelper.genMain((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value)
         }.taskValue
       },
@@ -496,6 +499,67 @@ object ScalatestBuild extends Build {
       scalacOptions ++= (if (scalaBinaryVersion.value == "2.10" || (scalaVersion.value startsWith "2.13")) Seq.empty else Seq("-Ypartial-unification"))
     ).dependsOn(scalacticJS, scalatestJS % "test", commonTestJS % "test").enablePlugins(ScalaJSPlugin)
 
+  lazy val scalatestBinaryCompatibilityFilters =
+    Seq(
+      exclude[FinalClassProblem]("org.scalatest.InsertionOrderSet"),   // InsertionOrderSet is a private[scalatest]
+      exclude[DirectMissingMethodProblem]("org.scalatest.InsertionOrderSet.*"),
+      exclude[IncompatibleResultTypeProblem]("org.scalatest.InsertionOrderSet.apply"),
+      exclude[DirectMissingMethodProblem]("org.scalatest.*.yeOldeTestNames"),   // yeOldeTestNames is private[scalatest], which we remove.
+      exclude[DirectMissingMethodProblem]("org.scalatest.tools.Framework#ScalaTestRunner.this"),
+      exclude[DirectMissingMethodProblem]("org.scalatest.Suite.parseSimpleName"),
+      exclude[DirectMissingMethodProblem]("org.scalatest.Suite.testSortingReporterTimeout_="),
+      exclude[DirectMissingMethodProblem]("org.scalatest.Suite.testSortingReporterTimeout"),
+      exclude[DirectMissingMethodProblem]("org.scalatest.Suite.stripDollars"),
+      exclude[DirectMissingMethodProblem]("org.scalatest.Suite.wrapReporterIfNecessary"),
+      exclude[DirectMissingMethodProblem]("org.scalatest.Suite.getSimpleNameOfAnObjectsClass"),
+      exclude[MissingClassProblem]("org.scalatest.ScreenshotCapturer"),  // We move this private[scalatest] class into org.scalatest.selenium
+      exclude[MissingClassProblem]("org.scalatest.ScreenshotOnFailure"),  // We move this private[scalatest] class into org.scalatest.selenium
+      exclude[DirectMissingMethodProblem]("org.scalatest.Resources.*"),  // Resources is a private[scalatest]
+      exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.*"),   // Resources is a private[scalatest]
+      exclude[InheritedNewAbstractMethodProblem]("org.scalatest.prop.GeneratorDrivenPropertyChecks.org$scalatest$prop$ScalaCheckConfiguration$$InternalPropertyCheckConfiguration"),  // private inner class, which we moved to ScalaCheckConfiguration
+      exclude[InheritedNewAbstractMethodProblem]("org.scalatest.prop.PropertyChecks.org$scalatest$prop$ScalaCheckConfiguration$$InternalPropertyCheckConfiguration"),  // private inner class, which we moved to ScalaCheckConfiguration
+      exclude[InheritedNewAbstractMethodProblem]("org.scalatest.prop.Checkers.org$scalatest$prop$ScalaCheckConfiguration$$InternalPropertyCheckConfiguration"),  // private inner class, which we moved to ScalaCheckConfiguration
+      exclude[DirectMissingMethodProblem]("org.scalatest.prop.Configuration.getParams"),  // private[scalatest] method, which we moved to ScalaCheckConfiguration
+      exclude[DirectMissingMethodProblem]("org.scalatest.prop.Configuration.getParams"),  // private[scalatest] method, which we moved to ScalaCheckConfiguration
+      exclude[DirectMissingMethodProblem]("org.scalatest.prop.GeneratorChecks.getParams"),  // private[scalatest] method, which we moved to ScalaCheckConfiguration
+      exclude[DirectMissingMethodProblem]("org.scalatest.tools.Runner.doRunRunRunDaDoRunRun"),  // private[scalatest] method.
+      exclude[DirectMissingMethodProblem]("org.scalatest.tools.RunnerJFrame.this"),  // private[scalatest] class
+      exclude[IncompatibleResultTypeProblem]("org.scalatest.tools.ScalaTestFramework#RunConfig.getConfigurations"),  // private[scalatest] inner object
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Matchers.atLeast"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Matchers.every"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Matchers.all"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Matchers.atMost"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Matchers.exactly"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.MustMatchers.atLeast"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.MustMatchers.every"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.MustMatchers.all"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.MustMatchers.atMost"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.MustMatchers.exactly"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forNo"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forBetween"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forAll"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forEvery"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forExactly"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forAtMost"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.Inspectors.forAtLeast"),  // Added new overload function to support -Ypartial-unification correctly
+      exclude[ReversedMissingMethodProblem]("org.scalatest.LoneElement.convertMapToCollectionLoneElementWrapper"),  // Added new implicit function to support -Ypartial-unification correctly
+      exclude[MissingClassProblem]("org.scalatestplus.junit.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.junit.package"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.testng.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.testng.package"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.easymock.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.easymock.package"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.jmock.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.jmock.package"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.mockito.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.mockito.package"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.scalacheck.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.scalacheck.package"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.selenium.package$"),  // Generated by the backward alias approach we used in 3.0.7.
+      exclude[MissingClassProblem]("org.scalatestplus.selenium.package")  // Generated by the backward alias approach we used in 3.0.7.
+    )
+
+
   lazy val scalatest = Project("scalatest", file("scalatest"))
    .settings(sharedSettings: _*)
    .settings(scalatestDocSettings: _*)
@@ -520,6 +584,7 @@ object ScalatestBuild extends Build {
      sourceGenerators in Compile += {
        Def.task{
          GenGen.genMain((sourceManaged in Compile).value / "org" / "scalatest" / "prop", version.value, scalaVersion.value) ++
+         GenScalaCheckGen.genMain((sourceManaged in Compile).value / "org" / "scalatestplus" / "scalacheck", version.value, scalaVersion.value) ++
          GenTable.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
          GenMatchers.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
          GenFactories.genMain((sourceManaged in Compile).value / "org" / "scalatest" / "matchers", version.value, scalaVersion.value) ++
@@ -534,12 +599,7 @@ object ScalatestBuild extends Build {
      docTaskSetting,
      mimaPreviousArtifacts := Set(organization.value %% name.value % previousReleaseVersion),
      mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (name.value + "_" + scalaBinaryVersion.value + "-" + releaseVersion + ".jar"), 
-     mimaBinaryIssueFilters ++= {
-       Seq(
-         exclude[MissingClassProblem]("org.scalatest.tools.SbtCommandParser$"),
-         exclude[MissingClassProblem]("org.scalatest.tools.SbtCommandParser")
-       )
-     }
+     mimaBinaryIssueFilters ++= scalatestBinaryCompatibilityFilters
    ).settings(osgiSettings: _*).settings(
       OsgiKeys.exportPackage := Seq(
         "org.scalatest",
@@ -623,6 +683,7 @@ object ScalatestBuild extends Build {
                                       |import org.scalactic._
                                       |import Matchers._""".stripMargin,
       scalacOptions ++= Seq("-P:scalajs:mapSourceURI:" + scalatestApp.base.toURI + "->https://raw.githubusercontent.com/scalatest/scalatest/v" + version.value + "/"),
+      libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
       libraryDependencies ++= scalatestJSLibraryDependencies,
       libraryDependencies += "org.scalacheck" %%% "scalacheck" % scalacheckVersion % "optional",
       //jsDependencies += RuntimeDOM % "test",
@@ -651,6 +712,7 @@ object ScalatestBuild extends Build {
       sourceGenerators in Compile += {
         Def.task{
           GenGen.genMain((sourceManaged in Compile).value / "org" / "scalatest" / "prop", version.value, scalaVersion.value) ++
+          GenScalaCheckGen.genMain((sourceManaged in Compile).value / "org" / "scalatestplus" / "scalacheck", version.value, scalaVersion.value) ++
           GenTable.genMainForScalaJS((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
           GenMatchers.genMainForScalaJS((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value) ++
           GenFactories.genMainJS((sourceManaged in Compile).value / "org" / "scalatest" / "matchers", version.value, scalaVersion.value)
@@ -659,7 +721,22 @@ object ScalatestBuild extends Build {
       },
       scalatestJSDocTaskSetting,
       mimaPreviousArtifacts := Set(organization.value %%% moduleName.value % previousReleaseVersion),
-      mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (moduleName.value + "_" + "sjs0.6_" + scalaBinaryVersion.value + "-" + releaseVersion + ".jar")
+      mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (moduleName.value + "_" + "sjs0.6_" + scalaBinaryVersion.value + "-" + releaseVersion + ".jar"),
+      mimaBinaryIssueFilters ++=
+        scalatestBinaryCompatibilityFilters ++
+        Seq(
+          exclude[DirectMissingMethodProblem]("org.scalatest.Suite.xmlContent"),  // from private[scalatest] Suite
+          exclude[DirectMissingMethodProblem]("org.scalatest.Suite.unparsedXml"),  // from private[scalatest] Suite
+          exclude[MissingClassProblem]("org.scalatest.Doc"),  // private[scalatest]
+          exclude[MissingClassProblem]("org.scalatest.Doc$*"),  // private[scalatest]
+          exclude[MissingClassProblem]("org.scalatest.DocSpec"),  // private[scalatest]
+          exclude[MissingClassProblem]("org.scalatest.DocSpec$*"),  // private[scalatest]
+          exclude[MissingClassProblem]("org.scalatest.DocSpecLike"),  // private[scalatest]
+          exclude[MissingClassProblem]("org.scalatest.DocSpecLike$*"),  // private[scalatest]
+          exclude[DirectMissingMethodProblem]("org.scalatest.events.Event.EventXmlHelper"),  // private[scalatest]
+          exclude[MissingClassProblem]("org.scalatest.events.Event$EventXmlHelper$*"),  // private[scalatest]
+          exclude[DirectMissingMethodProblem]("org.scalatest.events.*.toXml")  // private[scalatest]
+        )
     ).settings(osgiSettings: _*).settings(
       OsgiKeys.exportPackage := Seq(
         "org.scalatest",
@@ -722,11 +799,13 @@ object ScalatestBuild extends Build {
         Def.task {
           GenScalaTestJS.genTest((sourceManaged in Test).value, version.value, scalaVersion.value)
         }.taskValue
-      }/*,
+      },
       sourceGenerators in Test <+=
         (baseDirectory, sourceManaged in Test, version, scalaVersion) map genFiles("gengen", "GenGen.scala")(GenGen.genTest),
       sourceGenerators in Test <+=
-        (baseDirectory, sourceManaged in Test, version, scalaVersion) map genFiles("genmatchers", "GenMustMatchersTests.scala")(GenMustMatchersTests.genTestForScalaJS)*/
+        (baseDirectory, sourceManaged in Test, version, scalaVersion) map genFiles("genscalacheckgen", "GenScalaCheckGen.scala")(GenScalaCheckGen.genTest),
+      sourceGenerators in Test <+=
+        (baseDirectory, sourceManaged in Test, version, scalaVersion) map genFiles("genmatchers", "GenMustMatchersTests.scala")(GenMustMatchersTests.genTestForScalaJS)
     ).dependsOn(scalatestJS % "test", commonTestJS % "test").enablePlugins(ScalaJSPlugin)
 
   lazy val scalatestApp = Project("scalatestApp", file("."))
@@ -1026,10 +1105,21 @@ object ScalatestBuild extends Build {
       genGenTask,
       sourceGenerators in Test += {
         Def.task{
-          GenGen.genTest((sourceManaged in Test).value / "org" / "scalatest" / "prop", version.value, scalaVersion.value)
+          GenGen.genTest((sourceManaged in Test).value / "org" / "scalatest" / "prop", version.value, scalaVersion.value) 
         }.taskValue
       }
     ).dependsOn(scalatest, commonTest, scalacticMacro % "compile-internal, test-internal")
+
+  lazy val genScalaCheckGenTests = Project("genScalaCheckGenTests", file("gentests/GenScalaCheckGen"))
+    .settings(gentestsSharedSettings: _*)
+    .settings(
+      genGenTask,
+      sourceGenerators in Test += {
+        Def.task{
+          GenScalaCheckGen.genTest((sourceManaged in Test).value / "org" / "scalatestplus" / "scalacheck", version.value, scalaVersion.value) 
+        }.taskValue
+      }
+    ).dependsOn(scalatest, commonTest, scalacticMacro % "compile-internal, test-internal")  
 
   lazy val genTablesTests = Project("genTablesTests", file("gentests/GenTables"))
     .settings(gentestsSharedSettings: _*)
@@ -1164,7 +1254,7 @@ object ScalatestBuild extends Build {
     ).dependsOn(scalatest, commonTest, scalacticMacro % "compile-internal, test-internal")
 
   lazy val gentests = Project("gentests", file("gentests"))
-    .aggregate(genMustMatchersTests1, genMustMatchersTests2, genMustMatchersTests3, genMustMatchersTests4, genGenTests, genTablesTests, genInspectorsTests, genInspectorsShorthandsTests1,
+    .aggregate(genMustMatchersTests1, genMustMatchersTests2, genMustMatchersTests3, genMustMatchersTests4, genGenTests, genScalaCheckGenTests, genTablesTests, genInspectorsTests, genInspectorsShorthandsTests1,
                genInspectorsShorthandsTests2, genTheyTests, genContainTests1, genContainTests2, genSortedTests, genLoneElementTests, genEmptyTests/*, genSafeStyleTests*/, genColCompatTests)
 
   lazy val examples = Project("examples", file("examples"), delegates = scalatest :: Nil)
@@ -1265,6 +1355,16 @@ object ScalatestBuild extends Build {
     }
   }
 
+  val genScalaCheckGen = TaskKey[Unit]("genscalacheckgen", "Generate ScalaCheck Property Checks")
+  val genScalaCheckGenTask = genScalaCheckGen <<= (sourceManaged in Compile, sourceManaged in Test, name, version, scalaVersion) map { (mainTargetDir: File, testTargetDir: File, projName: String, theVersion: String, theScalaVersion: String) =>
+    projName match {
+      case "scalatest" =>
+        GenScalaCheckGen.genMain(new File(mainTargetDir, "scala/genscalacheckgen"), theVersion, theScalaVersion)
+      case "gentests" =>
+        GenScalaCheckGen.genTest(new File(testTargetDir, "scala/genscalacheckgen"), theVersion, theScalaVersion)
+    }
+  }
+
   val genTables = TaskKey[Unit]("gentables", "Generate Tables")
   val genTablesTask = genTables <<= (sourceManaged in Compile, sourceManaged in Test, name, version, scalaVersion) map { (mainTargetDir: File, testTargetDir: File, projName: String, theVersion: String, theScalaVersion: String) =>
     projName match {
@@ -1343,6 +1443,7 @@ object ScalatestBuild extends Build {
   val genCode = TaskKey[Unit]("gencode", "Generate Code, includes Must Matchers and They Word tests.")
   val genCodeTask = genCode <<= (sourceManaged in Compile, sourceManaged in Test, version, scalaVersion) map { (mainTargetDir: File, testTargetDir: File, theVersion: String, theScalaVersion: String) =>
     GenGen.genMain(new File(mainTargetDir, "scala/gengen"), theVersion, theScalaVersion)
+    GenScalaCheckGen.genMain(new File(mainTargetDir, "scala/genscalacheckgen"), theVersion, theScalaVersion)
     GenTable.genMain(new File(mainTargetDir, "scala/gentables"), theVersion, theScalaVersion)
     GenMatchers.genMain(new File(mainTargetDir, "scala/genmatchers"), theVersion, theScalaVersion)
     GenFactories.genMain(new File(mainTargetDir, "scala/genfactories"), theVersion, theScalaVersion)

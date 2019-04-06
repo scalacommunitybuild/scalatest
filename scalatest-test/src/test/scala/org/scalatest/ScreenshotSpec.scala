@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.scalatestplus.selenium
+package org.scalatest
 
 import org.scalatest.FunSpec
 import java.util.concurrent.TimeUnit
@@ -30,6 +30,8 @@ import org.scalatest.Args
 import org.scalatest.SharedHelpers.SilentReporter
 import org.scalatest.Ignore
 import org.scalatest.Matchers
+import org.scalatest.selenium.{WebBrowser, HtmlUnit, Firefox}
+import org.scalatestplus.selenium.JettySpec
 
 @Ignore
 class ScreenshotSpec extends JettySpec with Matchers with SpanSugar with WebBrowser with HtmlUnit {

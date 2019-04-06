@@ -179,6 +179,16 @@ if [[ $MODE = 'genGenTests' ]] ; then
   exit $rc
 fi
 
+if [[ $MODE = 'genScalaCheckGenTests' ]] ; then
+  echo "Doing 'sbt genScalaCheckGenTests/test'"
+
+  while true; do echo "..."; sleep 60; done &
+  sbt ++$TRAVIS_SCALA_VERSION genScalaCheckGenTests/test
+  rc=$?
+  kill %1
+  exit $rc
+fi
+
 if [[ $MODE = 'genTablesTests' ]] ; then
   echo "Doing 'sbt genTablesTests/test'"
 
@@ -281,8 +291,7 @@ fi
 
 if [[ $MODE = 'genColCompatTests' ]] ; then
   echo "Doing 'sbt genColCompatTests/test'"
-  export SBT_OPTS="-server -Xms1G -Xmx3G -Xss10M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode -XX:NewRatio=8 -XX:MaxPermSize=512M -XX:-UseGCOverheadLimit"
-
+  
   while true; do echo "..."; sleep 60; done &
   sbt ++$TRAVIS_SCALA_VERSION genColCompatTests/test
   rc=$?
