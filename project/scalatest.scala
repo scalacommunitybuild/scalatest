@@ -319,7 +319,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "Scalactic Macro",
-      organization := "org.scalactic",
+      organization := "scalacommunitybuild",
       sourceGenerators in Compile += {
         Def.task{
           ScalacticGenResourcesJVM.genResources((sourceManaged in Compile).value / "org" / "scalactic", version.value, scalaVersion.value) ++
@@ -335,7 +335,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "Scalactic Macro.js",
-      organization := "org.scalactic",
+      organization := "scalacommunitybuild",
       sourceGenerators in Compile += {
         // We'll delete JS_DEPENDENCIES in scalactic-macro.js
         Def.task{
@@ -362,7 +362,7 @@ object ScalatestBuild extends Build {
     .settings(scalacticDocSettings: _*)
     .settings(
       projectTitle := "Scalactic",
-      organization := "org.scalactic",
+      organization := "scalacommunitybuild",
       initialCommands in console := "import org.scalactic._",
       sourceGenerators in Compile += {
         Def.task{
@@ -409,7 +409,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "Scalactic.js",
-      organization := "org.scalactic",
+      organization := "scalacommunitybuild",
       moduleName := "scalactic",
       sourceGenerators in Compile += {
         Def.task {
@@ -460,7 +460,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "Scalactic Test",
-      organization := "org.scalactic",
+      organization := "scalacommunitybuild",
       libraryDependencies += scalacheckDependency("test"),
       publishArtifact := false,
       publish := {},
@@ -472,7 +472,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "Scalactic Test.js",
-      organization := "org.scalactic",
+      organization := "scalacommunitybuild",
       //jsDependencies += RuntimeDOM % "test",
       libraryDependencies += "org.scalacheck" %%% "scalacheck" % scalacheckVersion % "test",
       scalaJSLinkerConfig ~= { _.withOptimizer(false) },
@@ -561,7 +561,7 @@ object ScalatestBuild extends Build {
    .settings(scalatestDocSettings: _*)
    .settings(
      projectTitle := "ScalaTest",
-     organization := "org.scalatest",
+     organization := "scalacommunitybuild",
     //  moduleName := "scalatest",
      initialCommands in console := """|import org.scalatest._
                                       |import org.scalactic._
@@ -651,7 +651,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "ScalaTest Test",
-      organization := "org.scalatest",
+      organization := "scalacommunitybuild",
       libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
       libraryDependencies += scalacheckDependency("optional"),
       libraryDependencies ++= scalatestLibraryDependencies,
@@ -672,7 +672,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "ScalaTest",
-      organization := "org.scalatest",
+      organization := "scalacommunitybuild",
       moduleName := "scalatest",
       // moduleName := "scalatest",
       initialCommands in console := """|import org.scalatest._
@@ -776,7 +776,7 @@ object ScalatestBuild extends Build {
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "ScalaTest Test",
-      organization := "org.scalatest",
+      organization := "scalacommunitybuild",
       //libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
       libraryDependencies += scalacheckDependency("optional"),
       libraryDependencies += "org.scalacheck" %%% "scalacheck" % scalacheckVersion % "test",
@@ -812,7 +812,7 @@ object ScalatestBuild extends Build {
     .settings(
       projectTitle := "ScalaTest App",
       name := "scalatest-app",
-      organization := "org.scalatest",
+      organization := "scalacommunitybuild",
       libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
       libraryDependencies += scalacheckDependency("optional"),
       libraryDependencies ++= scalatestLibraryDependencies,
@@ -894,7 +894,7 @@ object ScalatestBuild extends Build {
     .settings(
       projectTitle := "ScalaTest App",
       name := "scalatest-app",
-      organization := "org.scalatest",
+      organization := "scalacommunitybuild",
       moduleName := "scalatest-app",
       //libraryDependencies ++= scalaXmlDependency(scalaVersion.value),
       libraryDependencies += scalacheckDependency("optional"),
