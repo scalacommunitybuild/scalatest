@@ -145,7 +145,7 @@ class NonEmptyArraySpec extends UnitSpec {
     the [IndexOutOfBoundsException] thrownBy { // In ScalaJs, this throws scala.scalajs.runtime.UndefinedBehaviorError
       val arr5 = NonEmptyArray(1, 2, 3)        // TODO, might be nice to check for that exception on ScalaJS instead of just skipping the check
       arr5(3)
-    } should have message "3"
+    } should (have message "3" or have message "Index 3 out of bounds for length 3")  // message 3 is in jdk8 and older, the new message is used by newer version of jdk.
     // SKIP-SCALATESTJS,NATIVE-END
   }
   it should "have a length method" in {
@@ -982,7 +982,7 @@ class NonEmptyArraySpec extends UnitSpec {
   }
   it should "have a reverseIterator method" in {
     NonEmptyArray(3).reverseIterator.toStream shouldBe Stream(3)
-    NonEmptyArray(1, 2, 3).reverseIterator.toArray shouldBe Stream(3, 2, 1)
+    NonEmptyArray(1, 2, 3).reverseIterator.toStream shouldBe Stream(3, 2, 1)
   }
   it should "have a reverseMap method" in {
     NonEmptyArray(3).reverseMap(_ + 1) shouldBe NonEmptyArray(4)
@@ -1049,14 +1049,14 @@ class NonEmptyArraySpec extends UnitSpec {
   it should "have a scanLeft method" in {
     NonEmptyArray(1).scanLeft(0)(_ + _) shouldBe NonEmptyArray(0, 1)
     NonEmptyArray(1, 2, 3).scanLeft(0)(_ + _) shouldBe NonEmptyArray(0, 1, 3, 6)
-    NonEmptyArray(1, 2, 3).scanLeft("z")(_ + _) shouldBe NonEmptyArray("z", "z1", "z12", "z123")
-    NonEmptyArray(0).scanLeft("z")(_ + _) shouldBe NonEmptyArray("z", "z0")
+    NonEmptyArray(1, 2, 3).scanLeft("z")(_.toString + _.toString) shouldBe NonEmptyArray("z", "z1", "z12", "z123")
+    NonEmptyArray(0).scanLeft("z")(_.toString + _.toString) shouldBe NonEmptyArray("z", "z0")
   }
   it should "have a scanRight method" in {
     NonEmptyArray(1).scanRight(0)(_ + _) shouldBe NonEmptyArray(1, 0)
     NonEmptyArray(1, 2, 3).scanRight(0)(_ + _) shouldBe NonEmptyArray(6, 5, 3, 0)
-    NonEmptyArray(1, 2, 3).scanRight("z")(_ + _) shouldBe NonEmptyArray("123z", "23z", "3z", "z")
-    NonEmptyArray(0).scanRight("z")(_ + _) shouldBe NonEmptyArray("0z", "z")
+    NonEmptyArray(1, 2, 3).scanRight("z")(_.toString + _.toString) shouldBe NonEmptyArray("123z", "23z", "3z", "z")
+    NonEmptyArray(0).scanRight("z")(_.toString + _.toString) shouldBe NonEmptyArray("0z", "z")
   }
   it should "have a segmentLength method" in {
     NonEmptyArray(1, 2, 3, 4, 5, 6, 6, 7, 8, 10).segmentLength(_ > 7, 0) shouldBe 0

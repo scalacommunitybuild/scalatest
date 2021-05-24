@@ -45,6 +45,7 @@ import scala.util.Try
  * @author Bill Venners
  */
 //SCALATESTJS-ONLY @scala.scalajs.reflect.annotation.EnableReflectiveInstantiation
+//SCALATESTNATIVE-ONLY @scala.scalajs.reflect.annotation.EnableReflectiveInstantiation
 @Finders(Array("org.scalatest.finders.FlatSpecFinder"))
 trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with ShouldVerb with MustVerb with CanVerb with Informing with Notifying with Alerting with Documenting { thisSuite =>
 
@@ -107,13 +108,31 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
    */
   protected def markup: Documenter = atomicDocumenter.get
 
-  final def registerAsyncTest(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
+  private final def registerAsyncTestImpl(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion], pos: source.Position): Unit = {
     engine.registerAsyncTest(testText, transformToOutcome(testFun), Resources.testCannotBeNestedInsideAnotherTest, None, None, pos, testTags: _*)
   }
 
-  final def registerIgnoredAsyncTest(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
+  // SKIP-DOTTY-START
+  final def registerAsyncTest(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
+    registerAsyncTestImpl(testText, testTags: _*)(testFun, pos)
+  }
+  // SKIP-DOTTY-END
+  //DOTTY-ONLY inline def registerAsyncTest(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
+  //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerAsyncTestImpl(testText, testTags: _*)(testFun, pos) }) } 
+  //DOTTY-ONLY }
+
+  private final def registerIgnoredAsyncTestImpl(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion], pos: source.Position): Unit = {
     engine.registerIgnoredAsyncTest(testText, transformToOutcome(testFun), Resources.testCannotBeNestedInsideAnotherTest, None, pos, testTags: _*)
   }
+
+  // SKIP-DOTTY-START
+  final def registerIgnoredAsyncTest(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
+    registerIgnoredAsyncTestImpl(testText, testTags: _*)(testFun, pos)
+  }
+  // SKIP-DOTTY-END
+  //DOTTY-ONLY inline def registerIgnoredAsyncTest(testText: String, testTags: Tag*)(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
+  //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerIgnoredAsyncTestImpl(testText, testTags: _*)(testFun, pos) }) } 
+  //DOTTY-ONLY }
 
   /**
    * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
@@ -174,6 +193,10 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
    */
   protected final class BehaviorWord {
 
+    private final def ofImpl(description: String, pos: source.Position): Unit = {
+      registerFlatBranch(description, Resources.behaviorOfCannotAppearInsideAnIn, pos)
+    }
+
     /**
      * Supports the registration of a &ldquo;subject&rdquo; being specified and tested via the
      * instance referenced from <code>AsyncFlatSpec</code>'s <code>behavior</code> field.
@@ -192,9 +215,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def of(description: String)(implicit pos: source.Position): Unit = {
-      registerFlatBranch(description, Resources.behaviorOfCannotAppearInsideAnIn, pos)
+      ofImpl(description, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def of(description: String): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => ofImpl(description, pos) }) } 
+    //DOTTY-ONLY }
   }
 
   /**
@@ -273,9 +301,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToRun(verb.trim + " " + name.trim, "in", tags, () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToRun(verb.trim + " " + name.trim, "in", tags, () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of pending, tagged tests in a <code>AsyncFlatSpec</code>.
@@ -295,9 +328,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START 
     def is(testFun: => PendingStatement)(implicit pos: source.Position): Unit = {
       registerPendingTestToRun(verb.trim + " " + name.trim, "is", tags, () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def is(testFun: => PendingStatement): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerPendingTestToRun(verb.trim + " " + name.trim, "is", tags, () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored, tagged tests in a <code>AsyncFlatSpec</code>.
@@ -317,9 +355,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def ignore(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
   }
 
   /**
@@ -385,9 +428,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToRun(verb.trim + " " + name.trim, "in", List(), () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToRun(verb.trim + " " + name.trim, "in", List(), () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of pending tests in a <code>AsyncFlatSpec</code>.
@@ -406,9 +454,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def is(testFun: => PendingStatement)(implicit pos: source.Position): Unit = {
       registerPendingTestToRun(verb.trim + " " + name.trim, "is", List(), () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def is(testFun: => PendingStatement): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerPendingTestToRun(verb.trim + " " + name.trim, "is", List(), () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored tests in a <code>AsyncFlatSpec</code>.
@@ -427,9 +480,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def ignore(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of tagged tests in a <code>AsyncFlatSpec</code>.
@@ -679,9 +737,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + name.trim, tags, "in", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + name.trim, tags, "in", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored, tagged, pending tests in a <code>AsyncFlatSpec</code>.
@@ -709,9 +772,15 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def is(testFun: => PendingStatement)(implicit pos: source.Position): Unit = {
       registerPendingTestToIgnore(verb.trim + " " + name.trim, tags, "is", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def is(testFun: => PendingStatement): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerPendingTestToIgnore(verb.trim + " " + name.trim, tags, "is", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
+    
     // Note: no def ignore here, so you can't put two ignores in the same line
   }
 
@@ -776,9 +845,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + name.trim, List(), "in", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + name.trim, List(), "in", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored, pending tests in a <code>AsyncFlatSpec</code>.
@@ -805,9 +879,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def is(testFun: => PendingStatement)(implicit pos: source.Position): Unit = {
       registerPendingTestToIgnore(verb.trim + " " + name.trim, List(), "is", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def is(testFun: => PendingStatement): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerPendingTestToIgnore(verb.trim + " " + name.trim, List(), "is", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored, tagged tests in a <code>AsyncFlatSpec</code>.
@@ -988,9 +1067,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToRun(verb.trim + " " + name.trim, "in", tags, () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToRun(verb.trim + " " + name.trim, "in", tags, () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of pending, tagged tests in a <code>AsyncFlatSpec</code>.
@@ -1010,9 +1094,15 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def is(testFun: => PendingStatement)(implicit pos: source.Position): Unit = {
       registerPendingTestToRun(verb.trim + " " + name.trim, "is", tags, () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def is(testFun: => PendingStatement): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerPendingTestToRun(verb.trim + " " + name.trim, "is", tags, () => testFun, pos) }) } 
+    //DOTTY-ONLY }
+
 
     /**
      * Supports the registration of ignored, tagged tests in a <code>AsyncFlatSpec</code>.
@@ -1032,9 +1122,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * the <a href="AsyncFlatSpec.html#taggingTests">Tagging tests section</a> in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def ignore(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
   }
 
   /**
@@ -1100,9 +1195,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToRun(verb.trim + " " + name.trim, "in", List(), () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToRun(verb.trim + " " + name.trim, "in", List(), () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of pending tests in a <code>AsyncFlatSpec</code>.
@@ -1121,9 +1221,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def is(testFun: => PendingStatement)(implicit pos: source.Position): Unit = {
       registerPendingTestToRun(verb.trim + " " + name.trim, "is", List(), () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def is(testFun: => PendingStatement): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerPendingTestToRun(verb.trim + " " + name.trim, "is", List(), () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored tests in a <code>AsyncFlatSpec</code>.
@@ -1142,9 +1247,14 @@ trait AsyncFlatSpecLike extends AsyncTestSuite with AsyncTestRegistration with S
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def ignore(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of tagged tests in a <code>AsyncFlatSpec</code>.
@@ -1401,9 +1511,14 @@ import resultOfStringPassedToVerb.verb
      * for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToRun(verb.trim + " " + rest.trim, "in", List(), () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToRun(verb.trim + " " + rest.trim, "in", List(), () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of ignored tests in shorthand form.
@@ -1422,9 +1537,14 @@ import resultOfStringPassedToVerb.verb
      * in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def ignore(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + rest.trim, List(), "ignore", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + rest.trim, List(), "ignore", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
   }
 
   import scala.language.implicitConversions
@@ -1499,9 +1619,14 @@ import resultOfStringPassedToVerb.verb
      * in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def in(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToRun(verb.trim + " " + rest.trim, "in", tagsList, () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def in(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToRun(verb.trim + " " + rest.trim, "in", tagsList, () => testFun, pos) }) } 
+    //DOTTY-ONLY }
 
     /**
      * Supports the registration of tagged, ignored tests in shorthand form.
@@ -1522,9 +1647,14 @@ import resultOfStringPassedToVerb.verb
      * in the main documentation for trait <code>AsyncFlatSpec</code>.
      * </p>
      */
+    // SKIP-DOTTY-START
     def ignore(testFun: => Future[compatible.Assertion])(implicit pos: source.Position): Unit = {
       registerTestToIgnore(verb.trim + " " + rest.trim, tagsList, "ignore", () => testFun, pos)
     }
+    // SKIP-DOTTY-END
+    //DOTTY-ONLY inline def ignore(testFun: => Future[compatible.Assertion]): Unit = {
+    //DOTTY-ONLY   ${ source.Position.withPosition[Unit]('{(pos: source.Position) => registerTestToIgnore(verb.trim + " " + rest.trim, tagsList, "ignore", () => testFun, pos) }) } 
+    //DOTTY-ONLY }
   }
 
   /**

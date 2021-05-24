@@ -698,7 +698,7 @@ import org.scalatest.{Suite, Finders}
   * add nicely formatted text to HTML reports. Here's what the above <code>SetSpec</code> would look like in the HTML reporter:
   * </p>
   *
-  * <img class="stScreenShot" src="../../lib/funSuite.gif">
+  * <img class="stScreenShot" src="../../../lib/funSuite.gif">
   *
   * <a name="notifiersAlerters"></a><h2>Notifiers and alerters</h2>
   *
@@ -2187,6 +2187,7 @@ import org.scalatest.{Suite, Finders}
   * </ul>
   */
 //SCALATESTJS-ONLY @scala.scalajs.reflect.annotation.EnableReflectiveInstantiation
+//SCALATESTNATIVE-ONLY @scala.scalajs.reflect.annotation.EnableReflectiveInstantiation
 @Finders(Array("org.scalatest.finders.FunSuiteFinder"))
 abstract class AsyncFunSuite extends AsyncFunSuiteLike {
 

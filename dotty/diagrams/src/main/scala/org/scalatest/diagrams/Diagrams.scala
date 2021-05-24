@@ -19,7 +19,7 @@ import org.scalactic._
 import org.scalactic.Requirements._
 import scala.collection.mutable.ListBuffer
 import collection.immutable.TreeMap
-import org.scalatest.{AnchorValue, Assertions, DiagrammedExpr, DiagrammedAssertionsMacro, Succeeded}
+import org.scalatest.{Assertions, Succeeded}
 import org.scalatest.compatible.Assertion
 
 /**
@@ -158,7 +158,6 @@ trait Diagrams extends Assertions {
   // https://github.com/lampepfl/dotty/pull/8601#pullrequestreview-380646858
   implicit object UseDiagram
 
-  import scala.tasty._
   import scala.quoted._
 
   /**

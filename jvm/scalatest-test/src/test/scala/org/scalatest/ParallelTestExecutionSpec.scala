@@ -84,7 +84,7 @@ class ParallelTestExecutionSpec extends AnyFunSpec with EventHelpers {
 
     // SKIP-SCALATESTJS,NATIVE-START
     class ControlledOrderConcurrentDistributor(poolSize: Int) extends Distributor {
-      private val futureQueue = new java.util.concurrent.LinkedBlockingQueue[Future[T] forSome { type T }]
+      private val futureQueue = new java.util.concurrent.LinkedBlockingQueue[Future[_]]
       
       val buf = ListBuffer.empty[SuiteRunner]
       val execSvc: ExecutorService = Executors.newFixedThreadPool(poolSize)
@@ -257,14 +257,14 @@ class ParallelTestExecutionSpec extends AnyFunSpec with EventHelpers {
           val spec2 = new ExampleBeforeAfterParallelSpec()
         
           val tracker = new Tracker()
-          suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
-          suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
+          suiteSortingReporter(SuiteStarting(tracker.nextOrdinal(), spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
+          suiteSortingReporter(SuiteStarting(tracker.nextOrdinal(), spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
         
           spec1.run(None, Args(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
           spec2.run(None, Args(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
         
-          suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
-          suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
+          suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal(), spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
+          suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal(), spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
         
           fun(outOfOrderConcurrentDistributor)
         
@@ -278,7 +278,7 @@ class ParallelTestExecutionSpec extends AnyFunSpec with EventHelpers {
       val spec1SuiteId = new ExampleParallelSpec().suiteId
       val spec2SuiteId = new ExampleBeforeAfterParallelSpec().suiteId
       
-      val inOrderEvents = withDistributor(_.executeInOrder)
+      val inOrderEvents = withDistributor(_.executeInOrder())
       
       assert(inOrderEvents.size === 48)
       
@@ -334,7 +334,7 @@ class ParallelTestExecutionSpec extends AnyFunSpec with EventHelpers {
       checkScopeClosed(inOrderEvents(46), "Thing 2")
       checkSuiteCompleted(inOrderEvents(47), spec2SuiteId)
       
-      val reverseOrderEvents = withDistributor(_.executeInReverseOrder)
+      val reverseOrderEvents = withDistributor(_.executeInReverseOrder())
       
       assert(reverseOrderEvents.size === 48)
       
@@ -402,14 +402,14 @@ class ParallelTestExecutionSpec extends AnyFunSpec with EventHelpers {
         
         val tracker = new Tracker()
       
-        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
-        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal(), spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal(), spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
       
         spec1.run(None, Args(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
         spec2.run(None, Args(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
         
-        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
-        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal(), spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal(), spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
       
         outOfOrderConcurrentDistributor.executeInOrder()
         

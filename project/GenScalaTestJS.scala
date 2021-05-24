@@ -120,7 +120,7 @@ object GenScalaTestJS {
   }
 
   def genHtml(targetDir: File, version: String, scalaVersion: String): Seq[File] = {
-    copyResourceDir("jvm/core/src/main/html", "html", targetDir, List.empty)
+    copyResourceDir("scalatest-doc/src/main/html", "html", targetDir, List.empty)
   }
 
   val genScalaPackages: Map[String, List[String]] = 
@@ -181,6 +181,7 @@ object GenScalaTestJS {
         //"ParsedArgs.scala",
         "PrintReporter.scala",
         "ProgressBarPanel.scala",
+        "PrettyPrinter.scala", 
         //"ReporterConfigParam.scala",
         "ReporterConfiguration.scala",
         "ReporterFactory.scala",
@@ -204,7 +205,8 @@ object GenScalaTestJS {
         //"SuiteRunner.scala",
         "TestSpec.scala",
         "XmlReporter.scala",
-        "XmlSocketReporter.scala"
+        "XmlSocketReporter.scala", 
+        "XmlUtility.scala"
       ), 
       "org/scalatest/exceptions" -> List(
         "StackDepthExceptionHelper.scala"
@@ -379,6 +381,15 @@ object GenScalaTestJS {
     copyDir("jvm/freespec-test/src/test/scala/org/scalatest/freespec", "org/scalatest/freespec", targetDir, List.empty)
 
   def genFunSpecTest(targetDir: File, version: String, scalaVersion: String): Seq[File] = 
-    copyDir("jvm/funspec-test/src/test/scala/org/scalatest/funspec", "org/scalatest/funspec", targetDir, List.empty)        
+    copyDir("jvm/funspec-test/src/test/scala/org/scalatest/funspec", "org/scalatest/funspec", targetDir, List.empty)
+
+  def genFunSuiteTest(targetDir: File, version: String, scalaVersion: String): Seq[File] = 
+    copyDir("jvm/funsuite-test/src/test/scala/org/scalatest/funsuite", "org/scalatest/funsuite", targetDir, List.empty)          
+
+  def genPropSpecTest(targetDir: File, version: String, scalaVersion: String): Seq[File] = 
+    copyDir("jvm/propspec-test/src/test/scala/org/scalatest/propspec", "org/scalatest/propspec", targetDir, List.empty)
+
+  def genWordSpecTest(targetDir: File, version: String, scalaVersion: String): Seq[File] = 
+    copyDir("jvm/wordspec-test/src/test/scala/org/scalatest/wordspec", "org/scalatest/wordspec", targetDir, List.empty)  
 
 }

@@ -29,7 +29,7 @@ object AssertionsMacro {
    * @param condition original condition expression
    * @return transformed expression that performs the assertion check and throw <code>TestFailedException</code> with rich error message if assertion failed
    */
-  def assert(condition: Expr[Boolean], prettifier: Expr[Prettifier], pos: Expr[source.Position], clue: Expr[Any])(implicit qctx: QuoteContext): Expr[Assertion] =
+  def assert(condition: Expr[Boolean], prettifier: Expr[Prettifier], pos: Expr[source.Position], clue: Expr[Any])(using Quotes): Expr[Assertion] =
     transform('{Assertions.assertionsHelper.macroAssert}, condition, prettifier, pos, clue)
 
   /**
@@ -39,7 +39,7 @@ object AssertionsMacro {
    * @param condition original condition expression
    * @return transformed expression that performs the assumption check and throw <code>TestCanceledException</code> with rich error message if assumption failed
    */
-  def assume(condition: Expr[Boolean], prettifier: Expr[Prettifier], pos: Expr[source.Position], clue: Expr[Any])(implicit qctx: QuoteContext): Expr[Assertion] =
+  def assume(condition: Expr[Boolean], prettifier: Expr[Prettifier], pos: Expr[source.Position], clue: Expr[Any])(using Quotes): Expr[Assertion] =
     transform('{Assertions.assertionsHelper.macroAssume}, condition, prettifier, pos, clue)
 
   def transform(
@@ -47,11 +47,14 @@ object AssertionsMacro {
     condition: Expr[Boolean], prettifier: Expr[Prettifier],
     pos: Expr[source.Position], clue: Expr[Any]
   )
-  (implicit qctx: QuoteContext): Expr[Assertion] = {
-
-    import qctx.tasty._
+  (using Quotes): Expr[Assertion] = {
+    val pos = quotes.reflect.Position.ofMacroExpansion
+    val file = pos.sourceFile
+    val fileName: String = file.jpath.getFileName.toString
+    val filePath: String = org.scalactic.source.Position.filePathnames(file.toString)
+    val lineNo: Int = pos.startLine + 1
 
     val bool = BooleanMacro.parse(condition, prettifier)
-    '{ ($helper)($bool, $clue, $pos) }
+    '{ ($helper)($bool, $clue, org.scalactic.source.Position(${Expr(fileName)}, ${Expr(filePath)}, ${Expr(lineNo)})) }
   }
 }

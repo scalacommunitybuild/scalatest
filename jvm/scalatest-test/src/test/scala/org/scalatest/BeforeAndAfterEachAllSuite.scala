@@ -30,7 +30,7 @@ class BeforeAndAfterEachAllSuite extends AnyFunSuite {
   // SKIP-SCALATESTJS-START
   implicit def executionContext: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   // SKIP-SCALATESTJS-END
-  //SCALATESTJS-ONLY implicit def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+  //SCALATESTJS-ONLY implicit def executionContext: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
   class TheSuper extends AnyFunSpec {
     var runTestWasCalled = false
@@ -169,7 +169,7 @@ class BeforeAndAfterEachAllSuite extends AnyFunSuite {
     }
     val a = new MySuite
     val status = a.run(Some("test July"), Args(StubReporter))
-    assert(status.isCompleted)
+    assert(status.isCompleted())
     import OptionValues._
     assert(status.unreportedException.value.isInstanceOf[NumberFormatException])
   }
@@ -183,7 +183,7 @@ class BeforeAndAfterEachAllSuite extends AnyFunSuite {
     }
     val a = new MySuite
     val status = a.run(Some("test July"), Args(StubReporter))
-    assert(status.isCompleted)
+    assert(status.isCompleted())
     import OptionValues._
     assert(status.unreportedException.value.isInstanceOf[NumberFormatException])
   }
@@ -258,7 +258,7 @@ class BeforeAndAfterEachAllSuite extends AnyFunSuite {
     }
     val a = new MySuite
     val status = a.run(Some("test July"), Args(StubReporter))
-    assert(status.isCompleted)
+    assert(status.isCompleted())
     import OptionValues._
     assert(status.unreportedException.value.isInstanceOf[NumberFormatException])
   }
@@ -272,7 +272,7 @@ class BeforeAndAfterEachAllSuite extends AnyFunSuite {
     }
     val a = new MySuite
     val status = a.run(Some("test July"), Args(StubReporter))
-    assert(status.isCompleted)
+    assert(status.isCompleted())
     import OptionValues._
     assert(status.unreportedException.value.isInstanceOf[NumberFormatException])
   }

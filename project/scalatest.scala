@@ -17,8 +17,6 @@ import com.typesafe.tools.mima.plugin.MimaKeys.{mimaPreviousArtifacts, mimaCurre
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.core.ProblemFilters._
 
-import dotty.tools.sbtplugin.DottyPlugin.autoImport._
-
 import xerial.sbt.Sonatype.autoImport.sonatypePublishToBundle
 
 object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with JsBuild {
@@ -31,20 +29,6 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
   // set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")
   // To temporarily switch sbt to a different Scala version:
   // > ++ 2.10.5
-
-  val plusJUnitVersion = "3.2.2.0"
-  val plusTestNGVersion = "3.2.2.0"
-  val flexmarkVersion = "0.36.8"
-
-  val githubTag = "release-3.2.2" // for scaladoc source urls
-
-  val scalatestDocSourceUrl =
-    "https://github.com/scalatest/scalatest/tree/"+ githubTag +
-    "/scalatest/€{FILE_PATH}.scala"
-
-  val scalacticDocSourceUrl =
-    "https://github.com/scalatest/scalatest/tree/"+ githubTag +
-      "/scalactic/€{FILE_PATH}.scala"
 
   def envVar(name: String): Option[String] =
     try {
@@ -127,7 +111,7 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
   def sharedSettings: Seq[Setting[_]] = 
     commonSharedSettings ++ scalaVersionsSettings ++ Seq(
       libraryDependencies ++= {
-        if (isDotty.value)
+        if (scalaVersion.value.startsWith("3."))
           Seq()
         else
           scalaLibraries(scalaVersion.value),
@@ -146,8 +130,10 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
 
   def scalaXmlDependency(theScalaVersion: String): Seq[ModuleID] =
     CrossVersion.partialVersion(theScalaVersion) match {
-      case Some((scalaEpoch, scalaMajor)) if scalaEpoch != 2 || scalaMajor >= 11 =>
-        Seq(("org.scala-lang.modules" %% "scala-xml" % "1.2.0").withDottyCompat(theScalaVersion))
+      case Some((scalaEpoch, scalaMajor)) if scalaEpoch == 3 =>
+        Seq(("org.scala-lang.modules" %% "scala-xml" % "2.0.0"))
+      case Some((scalaEpoch, scalaMajor)) if scalaEpoch == 2 && scalaMajor >= 11 =>
+        Seq(("org.scala-lang.modules" %% "scala-xml" % "1.3.0"))
       case other =>
         Seq.empty
     }
@@ -176,6 +162,11 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
           "org.scala-lang.modules" %%% "scala-parser-combinators" % "1.1.2"
         )
 
+      case Some((3, _)) =>
+        Seq(
+          "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.0.0"
+        )  
+
       case Some((2, scalaMajor)) if scalaMajor >= 11 =>
         Seq("org.scala-lang.modules" %%% "scala-parser-combinators" % "1.1.1")
 
@@ -202,6 +193,7 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
       "-m", "org.scalactic.enablers",
       "-m", "org.scalatest.fixture",
       "-m", "org.scalatest.concurrent",
+      "-m", "org.scalatest.deprecated",
       "-m", "org.scalatest.events",
       "-m", "org.scalatest.prop",
       "-m", "org.scalatest.tools",
@@ -222,6 +214,9 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
       "-m", "org.scalatest.flatspec",
       "-m", "org.scalatest.freespec",
       "-m", "org.scalatest.funspec",
+      "-m", "org.scalatest.funsuite",
+      "-m", "org.scalatest.propspec",
+      "-m", "org.scalatest.wordspec",
       "-oDIF",
       "-W", "120", "60",
       "-h", "target/html",
@@ -286,13 +281,16 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
       mappings in (Compile, packageBin) ++= mappings.in(scalacticMacro, Compile, packageBin).value,
       // include the macro sources in the main source jar
       mappings in (Compile, packageSrc) ++= mappings.in(scalacticMacro, Compile, packageSrc).value,
-      scalacticDocSourcesSetting,
+      sources in (Compile, doc) :=
+        genDocSources((sources in Compile).value ++ (sources in scalacticMacro in Compile).value,
+          Seq((sourceManaged in Compile).value,
+            baseDirectory.value,
+            file(".").getCanonicalFile),
+          docsrcDir.value), 
       docTaskSetting,
       mimaPreviousArtifacts := Set(organization.value %% name.value % previousReleaseVersion),
       mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (name.value + "_" + scalaBinaryVersion.value + "-" + releaseVersion + ".jar"), 
-      mimaBinaryIssueFilters ++= Seq(
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("org.scalactic.ObjectDiffer.diffImpl")  // New function in private object
-      )
+      mimaBinaryIssueFilters ++= Seq()
     ).settings(osgiSettings: _*).settings(
       OsgiKeys.exportPackage := Seq(
         "org.scalactic",
@@ -360,7 +358,10 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
        scalatestFeatureSpecTest, 
        scalatestFlatSpecTest, 
        scalatestFreeSpecTest, 
-       scalatestFunSpecTest
+       scalatestFunSpecTest, 
+       scalatestFunSuiteTest, 
+       scalatestPropSpecTest, 
+       scalatestWordSpecTest
      )
 
   lazy val scalatestDiagramsTest = project.in(file("jvm/diagrams-test"))
@@ -396,7 +397,28 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
     .settings(sharedTestSettings: _*)
     .settings(
       projectTitle := "ScalaTest FunSpec Test"
-    ).dependsOn(commonTest % "test")        
+    ).dependsOn(commonTest % "test")
+
+  lazy val scalatestFunSuiteTest = project.in(file("jvm/funsuite-test"))
+    .settings(sharedSettings: _*)
+    .settings(sharedTestSettings: _*)
+    .settings(
+      projectTitle := "ScalaTest FunSuite Test"
+    ).dependsOn(commonTest % "test")  
+
+  lazy val scalatestPropSpecTest = project.in(file("jvm/propspec-test"))
+    .settings(sharedSettings: _*)
+    .settings(sharedTestSettings: _*)
+    .settings(
+      projectTitle := "ScalaTest PropSpec Test"
+    ).dependsOn(commonTest % "test")
+
+  lazy val scalatestWordSpecTest = project.in(file("jvm/wordspec-test"))
+    .settings(sharedSettings: _*)
+    .settings(sharedTestSettings: _*)
+    .settings(
+      projectTitle := "ScalaTest WordSpec Test"
+    ).dependsOn(commonTest % "test")            
 
   lazy val scalatestApp = project.in(file("scalatest-app"))
     .enablePlugins(SbtOsgi)
@@ -521,7 +543,14 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
           GenMatchers.genMain((sourceManaged in Compile).value / "org" / "scalatest", version.value, scalaVersion.value)
         }.taskValue
       },
+      sources in (Compile, doc) :=
+        genDocSources((sources in Compile).value,
+                       Seq((sourceManaged in Compile).value,
+                           (scalaSource in Compile).value, 
+                           (javaSource in Compile).value),
+                       docsrcDir.value), 
       scalatestDocSettings,
+      docTaskSetting,
       unmanagedResourceDirectories in Compile += baseDirectory.value / "scalatest" / "src" / "main" / "resources",
       mimaPreviousArtifacts := Set(organization.value %% name.value % previousReleaseVersion),
       mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (name.value + "_" + scalaBinaryVersion.value + "-" + releaseVersion + ".jar")
@@ -621,28 +650,8 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
       mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (name.value + "_" + scalaBinaryVersion.value + "-" + releaseVersion + ".jar"), 
       mimaBinaryIssueFilters ++= {
         Seq(
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.wasNeverReady"), // Generated function from error message bundle
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.wasNeverReady"),  // Generated function from error message bundle
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.wasNeverReady"),  // Generated function from error message bundle
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.wasNeverReady"),  // Generated function from error message bundle
-          exclude[DirectAbstractMethodProblem]("org.scalatest.concurrent.Futures#FutureConcept.futureValueImpl"), // Private function.
-          exclude[DirectMissingMethodProblem]("org.scalatest.concurrent.Futures#FutureConcept.futureValueImpl"), // Private function, for scala 2.11 and 2.10.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherRightValueNotDefined"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherLeftValueNotDefined"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotASuccess"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotAFailure"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotAFailure"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotASuccess"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherLeftValueNotDefined"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherRightValueNotDefined"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherRightValueNotDefined"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherLeftValueNotDefined"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotASuccess"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotAFailure"), // Function in private object Resources.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotAFailure"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotASuccess"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherLeftValueNotDefined"), // Function in private object FailureMessages.
-          exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherRightValueNotDefined") // Function in private object FailureMessages.
+          exclude[DirectMissingMethodProblem]("org.scalatest.concurrent.TimeLimits.failAfterImpl"),  // New function not in current version
+          exclude[DirectMissingMethodProblem]("org.scalatest.concurrent.TimeLimits.cancelAfterImpl")  // New function not in current version
         )
       }
     ).settings(osgiSettings: _*).settings(
@@ -1716,24 +1725,14 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
     GenSafeStyles.genTest(new File(testTargetDir, "scala/gensafestyles"), theVersion, theScalaVersion)
   }*/
 
-  val scalacticDocSourcesSetting =
-    sources in (Compile, doc) :=
-      genDocSources((sources in Compile).value ++ (sources in scalacticMacro in Compile).value,
-        Seq((sourceManaged in Compile).value,
-          baseDirectory.value,
-          file(".").getCanonicalFile),
-        docsrcDir.value)
+  val scalatestDocSourceUrl =
+    s"https://github.com/scalatest/releases-source/blob/main/scalatest/${releaseVersion}€{FILE_PATH}.scala"
 
-  val scalatestDocSourcesSetting =
-     sources in (Compile, doc) :=
-       genDocSources((sources in Compile).value,
-                     Seq((sourceManaged in Compile).value,
-                         baseDirectory.value,
-                         file(".").getCanonicalFile),
-                     docsrcDir.value)
+  val scalacticDocSourceUrl =
+    s"https://github.com/scalatest/releases-source/blob/main/scalactic/$releaseVersion€{FILE_PATH}.scala"
 
   val scalatestDocScalacOptionsSetting =
-    scalacOptions in (Compile, doc) :=
+    scalacOptions in (Compile, doc) := {
       Seq[String](
         // -Ymacro-no-expand is not supported (or needed) under 2.13. In case we want
         // to run Scaladoc under 2.12 again, this is the line that is required:
@@ -1742,6 +1741,7 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
         "-sourcepath", docsrcDir.value.getAbsolutePath,
         "-doc-title", projectTitle.value +" "+ releaseVersion,
         "-doc-source-url", scalatestDocSourceUrl)
+    }
 
   val scalacticDocScalacOptionsSetting =
     scalacOptions in (Compile, doc) :=

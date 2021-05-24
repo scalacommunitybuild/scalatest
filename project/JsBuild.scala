@@ -14,15 +14,9 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 trait JsBuild { this: BuildCommons =>
 
-  val scalaJSVersion = Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.1.1")
   val sjsPrefix = if (scalaJSVersion.startsWith("1.")) "_sjs1_" else "_sjs0.6_"
 
   lazy val deleteJsDependenciesTask = taskKey[Unit]("Delete JS_DEPENDENCIES")
-
-  def scalatestJSLibraryDependencies =
-    Seq(
-      "org.scala-js" %% "scalajs-test-interface" % scalaJSVersion
-    )
 
   lazy val scalacticMacroJS = project.in(file("js/scalactic-macro"))
     .settings(sharedSettings: _*)
@@ -83,9 +77,7 @@ trait JsBuild { this: BuildCommons =>
       mimaPreviousArtifacts := Set(organization.value %%% moduleName.value % previousReleaseVersion),
       mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (moduleName.value + sjsPrefix + scalaBinaryVersion.value + "-" + releaseVersion + ".jar"), 
       mimaBinaryIssueFilters ++= {
-        Seq(
-          exclude[ReversedMissingMethodProblem]("org.scalactic.ObjectDiffer.diffImpl")  // New function in private object
-        )
+        Seq()
       }
     ).settings(osgiSettings: _*).settings(
       OsgiKeys.exportPackage := Seq(
@@ -235,13 +227,16 @@ trait JsBuild { this: BuildCommons =>
       "-m", "org.scalatest.flatspec",
       "-m", "org.scalatest.freespec",
       "-m", "org.scalatest.funspec",
+      "-m", "org.scalatest.funsuite",
+      "-m", "org.scalatest.propspec",
+      "-m", "org.scalatest.wordspec",
       "-oDIF"))  
 
   lazy val commonTestJS = project.in(file("js/common-test"))
     .settings(sharedSettings: _*)
     .settings(
       projectTitle := "Common test classes used by scalactic.js and scalatest.js",
-      //libraryDependencies ++= crossBuildTestLibraryDependencies.value,
+      libraryDependencies ++= crossBuildTestLibraryDependencies.value,
       sourceGenerators in Compile += {
         Def.task{
           GenCommonTestJS.genMain((sourceManaged in Compile).value, version.value, scalaVersion.value) ++
@@ -260,11 +255,8 @@ trait JsBuild { this: BuildCommons =>
     .settings(
       projectTitle := "Scalactic Test.js",
       organization := "org.scalactic",
-      scalaJSLinkerConfig ~= { _.withOptimizer(false) },
       testOptions in Test ++=
         Seq(Tests.Argument(TestFrameworks.ScalaTest, "-oDIF")),
-      //jsEnv := NodeJSEnv(executable = "node").value,
-      //jsEnv := PhantomJSEnv().value,
       jsEnv := {
         import org.scalajs.jsenv.nodejs.NodeJSEnv
         new NodeJSEnv(
@@ -313,6 +305,7 @@ trait JsBuild { this: BuildCommons =>
     .settings(sharedTestSettingsJS: _*)
     .settings(
       projectTitle := "ScalaTest Test",
+      scalaJSLinkerConfig ~= { _.withOptimizer(false).withSemantics(_.withStrictFloats(true)) },
       sourceGenerators in Test += {
         Def.task {
           GenScalaTestJS.genTest((sourceManaged in Test).value, version.value, scalaVersion.value)
@@ -332,7 +325,10 @@ trait JsBuild { this: BuildCommons =>
        scalatestFeatureSpecTestJS, 
        scalatestFlatSpecTestJS, 
        scalatestFreeSpecTestJS, 
-       scalatestFunSpecTestJS
+       scalatestFunSpecTestJS, 
+       scalatestFunSuiteTestJS, 
+       scalatestPropSpecTestJS, 
+       scalatestWordSpecTestJS
      )
 
   lazy val scalatestDiagramsTestJS = project.in(file("js/diagrams-test"))
@@ -393,7 +389,43 @@ trait JsBuild { this: BuildCommons =>
           GenScalaTestJS.genFunSpecTest((sourceManaged in Test).value, version.value, scalaVersion.value)
         }.taskValue
       }
-    ).dependsOn(commonTestJS % "test").enablePlugins(ScalaJSPlugin)            
+    ).dependsOn(commonTestJS % "test").enablePlugins(ScalaJSPlugin)
+
+  lazy val scalatestFunSuiteTestJS = project.in(file("js/funsuite-test"))
+    .settings(sharedSettings: _*)
+    .settings(sharedTestSettingsJS: _*)
+    .settings(
+      projectTitle := "ScalaTest FunSuite Test",
+      sourceGenerators in Test += {
+        Def.task {
+          GenScalaTestJS.genFunSuiteTest((sourceManaged in Test).value, version.value, scalaVersion.value)
+        }.taskValue
+      }
+    ).dependsOn(commonTestJS % "test").enablePlugins(ScalaJSPlugin)         
+
+  lazy val scalatestPropSpecTestJS = project.in(file("js/propspec-test"))
+    .settings(sharedSettings: _*)
+    .settings(sharedTestSettingsJS: _*)
+    .settings(
+      projectTitle := "ScalaTest PropSpec Test",
+      sourceGenerators in Test += {
+        Def.task {
+          GenScalaTestJS.genPropSpecTest((sourceManaged in Test).value, version.value, scalaVersion.value)
+        }.taskValue
+      }
+    ).dependsOn(commonTestJS % "test").enablePlugins(ScalaJSPlugin)
+
+  lazy val scalatestWordSpecTestJS = project.in(file("js/wordspec-test"))
+    .settings(sharedSettings: _*)
+    .settings(sharedTestSettingsJS: _*)
+    .settings(
+      projectTitle := "ScalaTest WordSpec Test",
+      sourceGenerators in Test += {
+        Def.task {
+          GenScalaTestJS.genWordSpecTest((sourceManaged in Test).value, version.value, scalaVersion.value)
+        }.taskValue
+      }
+    ).dependsOn(commonTestJS % "test").enablePlugins(ScalaJSPlugin)         
 
   val scalatestJSDocTaskSetting =
     doc in Compile := docTask((doc in Compile).value,
@@ -455,26 +487,8 @@ trait JsBuild { this: BuildCommons =>
       mimaCurrentClassfiles := (classDirectory in Compile).value.getParentFile / (moduleName.value + sjsPrefix + scalaBinaryVersion.value + "-" + releaseVersion + ".jar"), 
       mimaBinaryIssueFilters ++= {
        Seq(
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages#wasNeverReady.apply"), // Generated function from error message bundle
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.wasNeverReady"),  // Generated function from error message bundle
-         ProblemFilters.exclude[DirectAbstractMethodProblem]("org.scalatest.concurrent.Futures#FutureConcept.futureValueImpl"), // Private function.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.concurrent.Futures#FutureConcept.futureValueImpl"), // Private funciton, for Scala 2.11 and 2.10.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherRightValueNotDefined"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherLeftValueNotDefined"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotASuccess"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotAFailure"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotAFailure"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotASuccess"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherLeftValueNotDefined"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherRightValueNotDefined"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherRightValueNotDefined"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.eitherLeftValueNotDefined"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotASuccess"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.Resources.tryNotAFailure"), // Function in private object Resources.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotAFailure"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.tryNotASuccess"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherLeftValueNotDefined"), // Function in private object FailureMessages.
-         ProblemFilters.exclude[DirectMissingMethodProblem]("org.scalatest.FailureMessages.eitherRightValueNotDefined"), // Function in private object FailureMessages.
+         exclude[DirectMissingMethodProblem]("org.scalatest.concurrent.TimeLimits.failAfterImpl"),  // New function not in current version
+         exclude[DirectMissingMethodProblem]("org.scalatest.concurrent.TimeLimits.cancelAfterImpl")  // New function not in current version
        )
      }
     ).settings(osgiSettings: _*).settings(
