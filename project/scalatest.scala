@@ -1378,7 +1378,7 @@ object ScalatestBuild extends BuildCommons with DottyBuild with NativeBuild with
           GenTheyWord.genTest((sourceManaged in Test).value / "org" / "scalatest", version.value, scalaVersion.value)
         }.taskValue
       }
-    ).dependsOn(scalatest, commonTest, scalacticMacro % "compile-internal, test-internal")
+    ).dependsOn(scalatest, commonTest, scalatestFlatSpec, scalacticMacro % "compile-internal, test-internal")
 
   lazy val genContainTests1 = project.in(file("gentests/GenContain1"))
     .settings(gentestsSharedSettings: _*)
