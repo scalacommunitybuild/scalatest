@@ -1,4 +1,3 @@
-import dotty.tools.sbtplugin.DottyPlugin.autoImport._
 import sbt._
 import Keys._
 import com.typesafe.tools.mima.plugin.MimaKeys.{mimaPreviousArtifacts, mimaCurrentClassfiles, mimaBinaryIssueFilters}
@@ -233,8 +232,8 @@ trait DottyBuild { this: BuildCommons =>
       initialCommands in console := """|import org.scalatest._
                                        |import org.scalactic._
                                        |import Matchers._""".stripMargin,
-      libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.0.0", 
-      libraryDependencies += ("org.scala-js" %% "scalajs-test-interface" % scalaJSVersion).withDottyCompat(dottyVersion), 
+      libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.0.0",
+      libraryDependencies += "org.scala-js" %%% "scalajs-test-interface" % scalaJSVersion,
       packageManagedSources,
       sourceGenerators in Compile += Def.task {
         GenModulesDotty.genScalaTestCoreJS((sourceManaged in Compile).value, version.value, scalaVersion.value) ++
