@@ -1050,8 +1050,11 @@ trait Conductors extends PatienceConfiguration {
           if (!firstExceptionThrown.isEmpty) {
             // If any exception has been thrown, stop any live test thread.
             threadGroup.getThreads.foreach { t =>
-              if (t.isAlive)
-                t.stop()
+              if (t.isAlive) {
+                // Thread.stop throws on JDK 20+ and is gone in JDK 26+
+                try classOf[Thread].getMethod("stop").invoke(t)
+                catch { case _: ReflectiveOperationException => t.interrupt() }
+              }
             }
           }
           // If any threads are in the RUNNABLE state, just check to see if there's been
